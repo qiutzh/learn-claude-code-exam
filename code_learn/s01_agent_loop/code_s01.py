@@ -107,7 +107,7 @@ def agent_loop(messages: list):
         # 如果模型没有调用工具，我们就完成了
         tool_calls = [
             block for block in response.content if block.type == "tool_use"
-        ]
+        ]  # block.type: 只有 'thinking', 'text', 说明上一轮 loop 已经调完工具得到执行结果, 接下来退出循环
         if not tool_calls:
             return
 
@@ -150,3 +150,8 @@ if __name__ == "__main__":
                 if getattr(block, "type", None) == "text":
                     print(block.text)
         print()
+    """
+    1.`创建一个文件 hello.py 并打印 "Hello, World!"`
+    2.`列出此目录下的所有 Python 文件`
+    3.`当前 git 分支是什么？`
+    """
