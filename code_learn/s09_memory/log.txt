@@ -1,0 +1,51 @@
+D:\MySoft\Develop\miniconda3\envs\py311_ai_agent\python.exe D:\ProjectByPython\MyProject\ai-agent-harness\learn-claude-code-exam\code_learn\s09_memory\code_s09.py
+s09：记忆 —— 跨会话的选择性知识
+输入一个问题，按回车发送。输入 q 退出。
+
+s09 >> 我更喜欢用制表符进行缩进。记住这一点。
+[HOOK] UserPromptSubmit：正在 D:\ProjectByPython\MyProject\ai-agent-harness\learn-claude-code-exam\code_learn\s09_memory 中工作
+[HOOK] bash(['dir /b "D:\\ProjectByPython\\MyProject\\ai-agent-harness\\)
+[HOOK] read_file(['D:\\ProjectByPython\\MyProject\\ai-agent-harness\\learn-cl)
+[HOOK] bash(['cd /d D:\\ProjectByPython\\MyProject\\ai-agent-harness\\le)
+[HOOK] write_file(['D:\\ProjectByPython\\MyProject\\ai-agent-harness\\learn-cl)
+[HOOK] write_file(['- [用户偏好制表符缩进](用户偏好制表符缩进.md) - 用户更喜欢用制表符进行缩进', 'D:\\Project)
+[HOOK] bash(['cd /d D:\\ProjectByPython\\MyProject\\ai-agent-harness\\le)
+[HOOK] read_file(['D:\\ProjectByPython\\MyProject\\ai-agent-harness\\learn-cl)
+[HOOK] read_file(['D:\\ProjectByPython\\MyProject\\ai-agent-harness\\learn-cl)
+[HOOK] Stop：本次会话使用了 8 次工具调用
+已记住并保存。新增记忆记录：
+
+- `.memory/用户偏好制表符缩进.md`（类型 `user`，正文：用户更喜欢用制表符（Tab）进行缩进，而不是空格）
+- `.memory/MEMORY.md` 已更新对应索引
+
+后续会话中相关请求会通过记忆目录召回这条偏好；如果它与你当时的明确要求冲突，会以当前要求为准。
+
+D:\MySoft\Develop\miniconda3\envs\py311_ai_agent\python.exe D:\ProjectByPython\MyProject\ai-agent-harness\learn-claude-code-exam\code_learn\s09_memory\code_s09.py
+s09：记忆 —— 跨会话的选择性知识
+输入一个问题，按回车发送。输入 q 退出。
+
+s09 >> 我偏好哪种缩进风格？
+[HOOK] UserPromptSubmit：正在 D:\ProjectByPython\MyProject\ai-agent-harness\learn-claude-code-exam\code_learn\s09_memory 中工作
+[HOOK] Stop：本次会话使用了 0 次工具调用
+根据我的记忆记录，您更喜欢用**制表符（Tab）**进行缩进，而不是空格。
+
+s09 >> 今天几号了，天气怎么样
+[HOOK] UserPromptSubmit：正在 D:\ProjectByPython\MyProject\ai-agent-harness\learn-claude-code-exam\code_learn\s09_memory 中工作
+[HOOK] bash(['echo %date% %time%'])
+[HOOK] Stop：本次会话使用了 1 次工具调用
+今天是 **2026年10月19日，星期一**，当前时间约 20:52。
+
+关于天气：我的工具集里没有联网查询天气的能力，无法获取实时天气信息。建议您直接查看手机天气应用或气象网站了解当地天气情况。
+
+s09 >> 我喜欢什么缩进符
+[HOOK] UserPromptSubmit：正在 D:\ProjectByPython\MyProject\ai-agent-harness\learn-claude-code-exam\code_learn\s09_memory 中工作
+[HOOK] Stop：本次会话使用了 1 次工具调用
+您更喜欢使用**制表符（Tab）**作为缩进符，而不是空格。
+
+s09 >> 本次会话不要创建文件
+[HOOK] UserPromptSubmit：正在 D:\ProjectByPython\MyProject\ai-agent-harness\learn-claude-code-exam\code_learn\s09_memory 中工作
+[HOOK] Stop：本次会话使用了 1 次工具调用
+明白了。本次会话中我不会创建任何新文件，仅进行读取或执行其他不涉及文件创建的操作。
+
+s09 >> 
+Process finished with exit code 0
