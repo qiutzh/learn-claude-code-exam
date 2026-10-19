@@ -603,3 +603,13 @@ if __name__ == "__main__":
             if getattr(block, "type", None) == "text":
                 print(block.text)
         print()
+    """
+    实验一：较早的结果被替换
+    1.请读取 s01_agent_loop 到 s05_todo_write 五节课程的 README.md，比较它们的一级标题，并总结这些标题的命名规律。
+    
+    实验二：大结果转存
+    1.请分析 web/src/data/generated/docs.json 的数据结构，并说明一条课程记录包含哪些主要字段。
+    
+    实验三：自动摘要
+    1.请比较 s08_context_compact/code.py 和 s09_memory/code.py，说明它们分别怎样管理当前上下文和持久记忆。
+    """
