@@ -401,3 +401,8 @@ if __name__ == "__main__":
             if getattr(block, "type", None) == "text":
                 print(block.text)
         print()
+    """
+    1.有哪些可用的技能？
+    2.加载 code-review 技能并按照其说明操作
+    3.查看 README.md，并先加载相关技能
+    """

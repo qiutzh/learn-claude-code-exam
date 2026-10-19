@@ -112,7 +112,7 @@ def run_glob(pattern: str) -> str:
             match for match in glob.glob(
                 pattern, root_dir=WORKDIR, recursive=True)
             if (WORKDIR / match).resolve().is_relative_to(WORKDIR)
-        })
+        })  # 判断 match 拼接到工作目录后，解析真实路径，是否仍落在工作目录内部。用于路径穿越（Path Traversal）防护
         shown = matches[:200]
         if len(matches) > 200:
             shown.append("... （省略更多匹配项；请缩小模式范围）")
@@ -276,7 +276,7 @@ def extract_text(content) -> str:
     )
 
 
-def run_subagent(prompt: str) -> str:
+def run_subagent(prompt: str) -> str:  # todo: 子agent入参变量是提示词prompt, 也对应工具名称task的参数
     print("\n\033[35m[子代理已启动]\033[0m")
     messages = [{"role": "user", "content": prompt}]
 
@@ -304,7 +304,7 @@ def run_subagent(prompt: str) -> str:
         results = []
         for block in tool_calls:
             output = execute_tool(block, SUB_HANDLERS)
-            print(f"  \033[90m[子] {block.name}：{output[:100]}\033[0m")
+            print(f"  \033[90m[子代理] {block.name}：{output[:100]}\033[0m")
             results.append({
                 "type": "tool_result",
                 "tool_use_id": block.id,
@@ -389,4 +389,3 @@ if __name__ == "__main__":
     2.委派：读取agents/目录下的所有.py文件，并总结每个文件的作用
     3.使用任务创建s06_subagent/example/string_tools.py，其中包含一个slugify(text: str)函数，然后由父Agent进行验证
     """
-  

@@ -1,0 +1,135 @@
+D:\MySoft\Develop\miniconda3\envs\py311_ai_agent\python.exe D:\ProjectByPython\MyProject\ai-agent-harness\learn-claude-code-exam\code_learn\s07_skill_loading\code_s07.py
+s07：技能加载 —— 先看目录，按需加载完整内容
+输入一个问题，按回车发送。输入 q 退出。
+
+s07 >> 有哪些可用的技能？
+[HOOK] UserPromptSubmit：正在 D:\ProjectByPython\MyProject\ai-agent-harness\learn-claude-code-exam\code_learn\s07_skill_loading 中工作
+[HOOK] Stop：本次会话使用了 0 次工具调用
+当前环境中有以下 4 个可用技能：
+
+1. **agent-builder** — 为任何领域设计和构建 AI 智能体。适用于：创建智能体、构建助手、设计 AI 系统、了解智能体架构/模式、需要关于能力/子智能体/规划/技能机制的帮助，或询问 Claude Code、Cursor 等智能体内部机制。
+
+2. **code-review** — 代码审查相关技能（详情需加载查看）。
+
+3. **mcp-builder** — MCP（Model Context Protocol）构建相关技能（详情需加载查看）。
+
+4. **pdf** — PDF 处理相关技能（详情需加载查看）。
+
+如需了解某个技能的具体用法，我可以使用 `load_skill` 加载其完整说明。
+
+s07 >> 加载 code-review 技能并按照其说明操作
+[HOOK] UserPromptSubmit：正在 D:\ProjectByPython\MyProject\ai-agent-harness\learn-claude-code-exam\code_learn\s07_skill_loading 中工作
+[HOOK] load_skill(['code-review'])
+[HOOK] glob(['**/*'])
+[HOOK] bash(['dir /b'])
+[HOOK] read_file(['code_s07.py'])
+[HOOK] bash(['python -m py_compile code_s07.py && echo SYNTAX_OK'])
+[HOOK] bash(['findstr /n /i "password secret token api_key" code_s07.py')
+[HOOK] bash(['findstr /n /i "TODO FIXME HACK XXX" code_s07.py'])
+[HOOK] glob(['**/test*.py'])
+[HOOK] bash(['python -c "import code_s07; print(\'SKILLS:\', code_s07.SK)
+[HOOK] bash(['python -c "import code_s07; d = code_s07.SKILL_LOADER.skil)
+[HOOK] bash(['python -c "import code_s07, sys; sys.stdout.reconfigure(en)
+[HOOK] bash(['for %f in (skills\\code-review\\SKILL.md skills\\mcp-build)
+[HOOK] bash(['python -c "import sys, locale; print(\'stdout:\', sys.stdo)
+[HOOK] bash(['pip list --outdated 2>&1 | findstr /i "anthropic pyyaml do)
+[HOOK] Stop：本次会话使用了 14 次工具调用
+所有检查完成。以下按 code-review 技能的规范格式输出完整的代码审查报告：
+
+## Code Review: code_s07.py
+
+### Summary
+一个用于演示"技能按需加载"机制的最小 Agent 运行框架（SkillLoader 扫描 + 工具分发 + 钩子系统 + Anthropic API 循环）。整体结构清晰、可读性好，但存在 1 个会导致 3/4 技能无法被正确描述的关键缺陷，以及若干安全与健壮性问题。
+
+### Critical Issues
+
+1. **frontmatter 解析失败 → 技能描述退化为 "```markdown"**（`parse_frontmatter`，第 60–63 行）
+   - 根因：`code-review`、`mcp-builder`、`pdf` 三个 SKILL.md 以 ```` ```markdown ```` 围栏行开头，而不是 `---`。`lines[0].rstrip("\r\n") != "---"` 直接判定无 frontmatter，回退逻辑 `body.split("\n", 1)[0]` 取到首行即 ```` ```markdown ````，于是 `catalog()` 输出三个废话描述（`agent-builder` 因文件以 `---` 开头而侥幸正常）。已实测确认。
+   - Impact：系统提示中的技能目录失去真正描述，模型无法判断何时该加载技能——这正是本程序要演示的核心功能，等于功能失效。
+   - Fix：解析前先剥离围栏行；或在全文查找第一个行首 `---` 作为 frontmatter 起始：
+     ```python
+     text = text.strip()
+     if text.startswith("```"):
+         text = text.split("\n", 1)[1]  # 去掉首个围栏
+     lines = text.splitlines(keepends=True)
+     ```
+
+2. **DENY_LIST 匹配为大小写敏感的子串匹配**（`permission_hook`，第 211 行 `if pattern in command`）
+   - Impact：Windows 下 cmd 命令不区分大小写，`SHUTDOWN`、`Sudo`、`MKFS` 等可绕过拒绝名单（而 `rm`/`del` 走的大小写不敏感正则却能拦截）。同时 "sudo" 子串匹配会把无害命令（如 `echo sudo`）也误拦。
+   - Fix：`if pattern.lower() in command.lower():`，或统一改用与 `DESTRUCTIVE_COMMAND_WORD` 一致的单词边界正则。
+
+3. **`run_bash`（shell=True）不受工作区路径限制**（第 152–161 行）
+   - Impact：文件类工具（read/write/edit/glob）都有 `is_relative_to(WORKDIR)` 包含检查，但 bash 工具没有任何沙箱约束，模型可借 shell 读取/改写工作区外的任意文件、环境变量（含 API key）——沙箱逃逸。
+   - Fix：至少将 bash 的越权风险纳入权限钩子询问；更强的方案是限制 `cwd` 并在子进程中降权，或使用无 shell 的 API + 白名单。
+
+### Improvements（安全/正确性/性能/可维护性）
+
+1. **缺少工作区外的相对路径处理**（`run_glob`，第 181 行）：已用 `resolve().is_relative_to(WORKDIR)` 过滤，做得正确；但 `glob.glob` 的 `root_dir` 参数要求 Python ≥ 3.11，与脚本使用的 `int | None`（需 3.10+）不一致，建议在文件头注明最低版本要求。
+2. **导入期环境变量硬依赖**（第 48 行）：`MODEL = os.environ["MODEL_ID"]` 缺少时模块导入即崩溃，且错误信息不友好；建议 `os.getenv("MODEL_ID", "claude-sonnet-4-5")` 或给出明确提示。
+3. **`read_file` 的 limit 边界处理**（第 164 行 `if limit and ...`）：`limit=0` 或负数时语义不明（0 视为不截断，负数全部截断）；建议显式校验 `limit is not None and limit >= 0`。
+4. **编码显示**：实测 stdout 为 UTF-8 而控制台代码页为 cp936，中文输出（catalog、钩子提示）在 cmd 中显示为乱码（如"涓轰换浣曢"）。内存中字符串正确（`ascii()` 验证为 `\u4e3a\u4efb...`），属控制台代码页问题，可在启动时执行 `chcp 65001` 或要求运行时设置 `PYTHONIOENCODING=utf-8`。
+5. **依赖**：`pip list --outdated` 显示 antropic 1.13.0→1.15.0、python-dotenv 1.2.2→1.2.4 有新版；建议定期 `pip-audit` 检查已知漏洞。
+6. **测试**：未找到任何测试文件，`__init__.py` 为空。`parse_frontmatter`、`scan`、权限钩子是纯逻辑，最容易被波折案例破坏，建议补充单元测试（正是本审查抓出 1 号缺陷的方式）。
+
+### Positive Notes
+
+- 凭证处理得当：`load_dotenv` 后在设置了第三方 `ANTHROPIC_BASE_URL` 时主动移除 `ANTHROPIC_AUTH_TOKEN`，避免把 Anthropic 令牌泄露给代理端点。
+- 未发现硬编码密码/密钥/令牌（grep 验证仅为上述合法清理逻辑）。
+- frontmatter 解析对 YAML 异常、非 dict 元数据均有防御（try/except + isinstance），健壮。
+- 钩子设计（触发/注册分离）、`errors="replace"`、超时处理、输出截断（50k）等细节体现了防御性编程意识。
+- 没有 TODO/FIXME；命名清晰一致，函数长度均低于 50 行。
+
+### Verdict
+
+- [ ] Ready to merge
+- [x] Needs minor changes
+  （关键缺陷只有第 1 条，但它是本程序核心演示功能，必须修复；其余为加固项）
+
+**建议优先级**：先修 #1（一行级改动），然后 #2 与 #3（安全），最后按 Improvement 清单加固。
+
+s07 >> 查看 README.md，并先加载相关技能
+[HOOK] UserPromptSubmit：正在 D:\ProjectByPython\MyProject\ai-agent-harness\learn-claude-code-exam\code_learn\s07_skill_loading 中工作
+[HOOK] glob(['**/*.md'])
+[HOOK] bash(['dir /s /b README* 2>nul'])
+[HOOK] bash(['dir /a /b'])
+[HOOK] bash(['dir /b ..'])
+[HOOK] bash(['dir /s /b ..\\..\\README* 2>nul & dir /s /b ..\\..\\*.md 2)
+[HOOK] bash(['dir /a /b ..\\s07_skill_loading & dir /a /b .'])
+
+[权限] 访问工作区之外的路径
+   工具：read_file({'path': '..\\..\\code_official\\s07_skill_loading\\README.zh.md'})
+   允许？[y/N] y
+[HOOK] read_file(['..\\..\\code_official\\s07_skill_loading\\README.zh.md'])
+[HOOK] load_skill(['agent-builder'])
+[HOOK] Stop：本次会话使用了 22 次工具调用
+已按要求完成：先查看 README，再识别并加载相关技能。
+
+## README.md 内容概要（s07: Skill Loading）
+
+对应路径 `code_official\s07_skill_loading\README.zh.md`（当前工作目录本身没有 README）。要点：
+
+- **问题**：把所有规范文档（React 规范、SQL 指南、API 设计文档）全部塞进 system prompt，会导致每次调用都发送无关全文，浪费 token 和上下文窗口。
+- **解决方案**：分两级加载——
+  1. 启动时 `SkillLoader` 扫描 `skills/*/SKILL.md`，只把 `name` + `description` 目录放入 system prompt；
+  2. 模型按需调用 `load_skill(name)`，完整 SKILL.md 以 `tool_result` 形式追加到消息。
+- **涉及机制**：frontmatter 解析、`catalog()`、`load()`（按名字查注册表而非路径）、Agent Loop 中 tool_result 的追加。
+
+## 已加载的相关技能：agent-builder
+
+根据其描述中的使用场景——"需要关于**能力、子智能体、规划或技能机制（skill mechanisms）**的帮助"以及"询问 Claude Code 或类似**智能体内部机制**"——README 讲的正是技能加载机制本身，因此 agent-builder 是唯一直接相关的技能（code-review / mcp-builder / pdf 均不相关）。
+
+## 用 agent-builder 的视角解读 README
+
+agent-builder 的核心理念与此 README 的设计完全对应：
+
+1. **"知识按需加载（Front-loaded knowledge 是反模式）"**：README 解决的问题正是技能的反模式——"前置知识导致上下文膨胀"。解决方式是把知识目录（名称+摘要）放入 context，让模型决定何时加载全文。这与"让知识可用，而非强制；在相关时加载，而非预先加载"一致。
+2. **三大要素对应关系**：
+   - **能力**：`load_skill` 是一个原子工具，入口在 TOOLS 列表，处理在 `TOOL_HANDLERS`。
+   - **知识**：各 `SKILL.md` 是按名称登记的领域知识，注入方式是 tool_result。
+   - **上下文**：目录很小（仅名称+描述），只有在相关时才把全文追加进消息——保护上下文清晰性。
+3. **"模型就是智能体"**：README 明确展示了系统不预先加载所有内容，而是给模型一个目录并信任它能判断何时需要。
+4. **渐进式复杂度第 4 层（技能：按需知识）**：s07 实现的正是这一层——"需要领域专业知识时"才添加按需加载的技能。
+
+另外值得注意：本次会话的实际演示恰好暴露了代码审查中发现的那个关键缺陷——三个 SKILL.md 因 ```` ```markdown ```` 围栏导致 frontmatter 未解析、目录中的描述退化为 "```markdown"。这与 README 展示的预期输出（`- code-review: Perform thorough code reviews...`）不一致，进一步印证了该缺陷的严重性（它不仅影响本课程示例，也直接破坏这套机制的真实运行效果）。
+
+s07 >> 
